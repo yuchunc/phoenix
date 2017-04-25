@@ -166,7 +166,7 @@
 //       this.setState({users: Presence.list(room.presences, listBy)})
 //     })
 //
-const VSN = "1.0.0"
+const VSN = "2.0.0"
 const SOCKET_STATES = {connecting: 0, open: 1, closing: 2, closed: 3}
 const DEFAULT_TIMEOUT = 10000
 const WS_CLOSE_NORMAL = 1000
@@ -438,6 +438,21 @@ export class Channel {
   isLeaving(){ return this.state === CHANNEL_STATES.leaving }
 }
 
+let Encoder = {
+  encode(msg, callback){
+    let payload = [
+      msg.join_ref, msg.ref, msg.topic, msg.event, msg.payload
+    ]
+    return callback(JSON.stringify(payload))
+  },
+
+  decode(rawPayload, callback){
+    let [join_ref, ref, topic, event, payload] = JSON.parse(rawPayload)
+
+    return callback({join_ref, ref, topic, event, payload})
+  }
+}
+
 export class Socket {
 
   // Initializes the Socket
@@ -483,8 +498,8 @@ export class Socket {
     this.ref                  = 0
     this.timeout              = opts.timeout || DEFAULT_TIMEOUT
     this.transport            = opts.transport || window.WebSocket || LongPoll
-    this.defaultEncoder       = (payload, callback) => callback(JSON.stringify(payload))
-    this.defaultDecoder       = (payload, callback) => callback(JSON.parse(payload))
+    this.defaultEncoder       = Encoder.encode
+    this.defaultDecoder       = Encoder.decode
     if(this.transport !== LongPoll){
       this.encode = opts.encode || this.defaultEncoder
       this.decode = opts.decode || this.defaultDecoder
@@ -713,7 +728,7 @@ export class LongPoll {
 
       switch(status){
         case 200:
-          messages.forEach( msg => this.onmessage({data: JSON.stringify(msg)}) )
+          messages.forEach(msg => this.onmessage({data: msg}))
           this.poll()
           break
         case 204:

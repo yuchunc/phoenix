@@ -145,15 +145,15 @@ defmodule Phoenix.Channel.Server do
   @doc """
   Replies to a given ref to the transport process.
   """
-  def reply(pid, ref, topic, {status, payload}, serializer)
+  def reply(pid, join_ref, ref, topic, {status, payload}, serializer)
       when is_binary(topic) and is_map(payload) do
 
     send pid, serializer.encode!(
-      %Reply{topic: topic, ref: ref, status: status, payload: payload}
+      %Reply{topic: topic, join_ref: join_ref, ref: ref, status: status, payload: payload}
     )
     :ok
   end
-  def reply(_, _, _, _, _), do: raise_invalid_message()
+  def reply(_, _, _, _, _, _), do: raise_invalid_message()
 
 
   @spec raise_invalid_message() :: no_return()
@@ -357,7 +357,7 @@ defmodule Phoenix.Channel.Server do
   defp handle_reply(socket, {status, payload}, :handle_in)
        when is_atom(status) and is_map(payload) do
 
-    reply(socket.transport_pid, socket.ref, socket.topic, {status, payload},
+    reply(socket.transport_pid, socket.join_ref, socket.ref, socket.topic, {status, payload},
           socket.serializer)
   end
 
