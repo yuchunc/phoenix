@@ -49,10 +49,13 @@ defmodule Phoenix.Router.Resource do
   end
 
   defp extract_actions(opts, singleton) do
-    if only = Keyword.get(opts, :only) do
-      @actions -- (@actions -- only)
-    else
-      default_actions(singleton) -- Keyword.get(opts, :except, [])
+    default_actions = default_actions(singleton)
+    only = Keyword.get(opts, :only)
+    except = Keyword.get(opts, :except)
+    cond do
+      only && except -> raise "please chose either :only or :except in resources options"
+      except -> default_actions - except
+      only -> default_actions - (default_actions - only)
     end
   end
 
